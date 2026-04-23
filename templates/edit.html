@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Student</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Student</h1>
+
+        <form action="/update/{{ student[0] }}" method="POST" class="student-form">
+            <input type="text" name="name" value="{{ student[1] }}" required>
+            <input type="text" name="branch" value="{{ student[2] }}" required>
+
+            <button type="submit">Update</button>
+        </form>
+
+        <div style="text-align:center; margin-top: 20px;">
+            <a href="/" class="back-btn">← Back</a>
+        </div>
+    </div>
+</body>
+</html>
