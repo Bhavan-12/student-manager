@@ -1,8 +1,8 @@
-from flask import Flask, jsonify, render_template, request, redirect, jsonify
+from flask import Flask, jsonify, render_template, request, redirect, jsonify, session
 import sqlite3
 
 app = Flask(__name__)
-
+app.secret_key = "secret123"
 
 def init_db():
     conn = sqlite3.connect("students.db")
@@ -199,13 +199,21 @@ def signup():
 
     return "Signup successful"
 
+    session["user"] = username
+
+@app.route("/login-page")
+def login_page():
+    return render_template("login.html")
+
+
 @app.route("/login", methods=["POST"])
 def login():
+
     username = request.form.get("username")
     password = request.form.get("password")
 
     if not username or not password:
-        return "username and password are required", 400
+        return "Username and password are required", 400
 
     conn = sqlite3.connect("students.db")
     cursor = conn.cursor()
@@ -216,12 +224,23 @@ def login():
     )
 
     user = cursor.fetchone()
+
     conn.close()
 
     if not user:
         return "Invalid credentials", 401
 
+    session["user"] = username
+
     return "Login successful"
+
+@app.route("/dashboard")
+def dashboard():
+ if "user" not in session:
+    return "Access denied", 401
+ else:
+    return f"Welcome to the dashboard, {session['user']}!"  
+ 
 
 if __name__ == "__main__":
     app.run(debug=True)
