@@ -1,38 +1,13 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-    <title>Login</title>
-</head>
-
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <body>
+    <div class="container login-box">
+        <h1>Login</h1>
 
-    <h2>Login</h2>
+        <form action="/login" method="POST" class="login-form">
+            <input type="text" name="username" placeholder="Enter username" required>
+            <input type="password" name="password" placeholder="Enter password" required>
 
-    <form action="/login" method="POST">
-
-        <input
-            type="text"
-            name="username"
-            placeholder="Enter username"
-        >
-
-        <br><br>
-
-        <input
-            type="password"
-            name="password"
-            placeholder="Enter password"
-        >
-
-        <br><br>
-
-        <button type="submit">
-            Login
-        </button>
-
-    </form>
-
+            <button type="submit">Login</button>
+        </form>
+    </div>
 </body>
-
-</html>
