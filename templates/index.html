@@ -9,7 +9,12 @@
 <body>
     <div class="container">
         <h1>Student Manager</h1>
-
+        <form method="GET" action="/" class="student-form">
+            <input type="text" name="search" placeholder="Search student">
+            <button type="submit">Search</button>
+            <br>
+            <p>Showing results for: "{{ request.args.get('search') }}"</p>
+        </form>
         <form action="/add-student" method="POST" class="student-form">
             <input type="text" name="name" placeholder="Enter student name" required>
             <input type="text" name="branch" placeholder="Enter branch" required>
@@ -17,7 +22,7 @@
         </form>
 
         <h2>Student List</h2>
-
+        <p>{{ message }}</p>
         {% if students %}
             <table>
                 <tr>
@@ -44,8 +49,6 @@
                 </tr>
                 {% endfor %}
             </table>
-        {% else %}
-            <p>No students added yet.</p>
         {% endif %}
     </div>
 </body>

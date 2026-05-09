@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, jsonify, render_template, request, redirect, jsonify
 import sqlite3
 
 app = Flask(__name__)
@@ -16,23 +16,39 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            password TEXT NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 
-
 init_db()
-
 
 @app.route("/")
 def index():
     conn = sqlite3.connect("students.db")
     cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM students")
+    
+    search = request.args.get("search")
+    if search:
+        cursor.execute("SELECT * FROM students WHERE name LIKE ?", (f"%{search}%",))
+    else:
+        cursor.execute("SELECT * FROM students")
     students = cursor.fetchall()
+    if not students:
+        message = "No students found"
+    else:
+        if len(students) == 1:
+            message = "1 student found"
+        else:
+            message = f"{len(students)} students found"
 
     conn.close()
-    return render_template("index.html", students=students)
+    return render_template("index.html", students=students, message=message)
 
 
 @app.route("/add-student", methods=["POST"])
@@ -45,6 +61,13 @@ def add_student():
 
     conn = sqlite3.connect("students.db")
     cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM students WHERE name = ?", (name,))
+    existing_student = cursor.fetchone()
+
+    if existing_student:
+        conn.close()
+        return "Student already exists"
 
     cursor.execute(
         "INSERT INTO students (name, branch) VALUES (?, ?)",
@@ -97,6 +120,108 @@ def update_student(student_id):
     conn.close()
 
     return redirect("/")
+
+@app.route("/api/student/<int:student_id>")
+def api_student(student_id):
+    conn = sqlite3.connect("students.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
+    student = cursor.fetchone()
+
+    conn.close()
+
+    if not student:
+        return jsonify({"error": "Student not found"}), 404
+
+    return jsonify({"id": student[0], "name": student[1], "branch": student[2]})
+
+@app.route("/api/students")
+def api_students():
+    conn = sqlite3.connect("students.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM students")
+    students = cursor.fetchall()
+
+    conn.close()
+
+    students_list = [{"id": student[0], "name": student[1], "branch": student[2]} for student in students]
+
+    return jsonify(students_list)
+@app.route("/api/add-student", methods = ["POST"])
+def api_add_student():
+    data =  request.get.json()
+    name = data.get("name")
+    branch = data.get("branch")
+    if not name or not branch:
+        return jsonify ({"error": "name and branch are required"}), 400
+    conn = sqlite3.connect("students.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM students WHERE name = ?", (name,))
+    existing_student = cursor.fetchone()
+    if existing_student:
+        conn.close()
+        return jsonify({"error": "Student already exists"}), 400
+    cursor.execute(
+        "INSERT INTO students (name, branch) VALUES (?, ?)",
+        (name, branch)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Student added successfully"}), 201
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    username = request.form.get("username")
+    password = request.form.get("password")
+
+    if not username or not password:
+        return "username and password are required", 400
+
+    conn = sqlite3.connect("students.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    existing_user = cursor.fetchone()
+
+    if existing_user:
+        conn.close()
+        return "User already exists", 400
+
+    cursor.execute(
+        "INSERT INTO users (username, password) VALUES (?, ?)",
+        (username, password)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return "Signup successful"
+
+@app.route("/login", methods=["POST"])
+def login():
+    username = request.form.get("username")
+    password = request.form.get("password")
+
+    if not username or not password:
+        return "username and password are required", 400
+
+    conn = sqlite3.connect("students.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM users WHERE username = ? AND password = ?",
+        (username, password)
+    )
+
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        return "Invalid credentials", 401
+
+    return "Login successful"
 
 if __name__ == "__main__":
     app.run(debug=True)
