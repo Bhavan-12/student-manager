@@ -1,25 +1,51 @@
-# Student Manager (Flask + SQLite)
+# Student Management System
 
-A simple CRUD web application built using Flask and SQLite.
+A modern Flask-based Student Management System with authentication, session handling, and secure password hashing.
 
 ## Features
-- Add student
-- View students
-- Edit student
-- Delete student
+
+- Add students
+- Edit student details
+- Delete students
+- Search students
+- SQLite database integration
+- User signup system
+- User login/logout system
+- Session-based authentication
+- Protected dashboard
+- Flash messages
+- Password hashing security
+- Responsive modern UI
 
 ## Tech Stack
-- Python (Flask)
-- SQLite
-- HTML, CSS
 
-## How to Run
-1. Clone the repository
-2. Install Flask
-3. Run `python app.py`
-4. Open http://127.0.0.1:5000/
+- Python
+- Flask
+- SQLite3
+- HTML
+- CSS
+
+## Authentication Features
+
+- Secure password hashing using Werkzeug
+- Session-based login system
+- Protected routes
+- Logout functionality
+- Duplicate username validation
 
 ## Project Structure
-- app.py
-- templates/
-- static/
+project/
+│
+├── app.py
+├── students.db
+│
+├── templates/
+│   ├── index.html
+│   ├── login.html
+│   ├── signup.html
+│   └── dashboard.html
+│
+├── static/
+│   └── style.css
+│
+└── README.md
