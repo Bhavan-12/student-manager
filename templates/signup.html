@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
+    <title>Signup</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -18,33 +18,33 @@
             {% endif %}
         {% endwith %}
 
-        <h1>Login</h1>
+        <h1>Create Account</h1>
 
-        <form action="/login" method="POST" class="auth-form">
+        <form action="/signup" method="POST" class="auth-form">
 
             <input
                 type="text"
                 name="username"
-                placeholder="Enter username"
+                placeholder="Choose username"
                 required
             >
 
             <input
                 type="password"
                 name="password"
-                placeholder="Enter password"
+                placeholder="Choose password"
                 required
             >
 
             <button type="submit">
-                Login
+                Signup
             </button>
 
         </form>
 
         <div class="auth-link">
-            <a href="/signup-page">
-                Don't have an account? Signup
+            <a href="/login-page">
+                Already have an account? Login
             </a>
         </div>
 

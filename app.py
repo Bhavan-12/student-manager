@@ -1,5 +1,6 @@
-from flask import Flask, jsonify, render_template, request, redirect, jsonify, session
+from flask import Flask, jsonify, render_template, request, redirect, jsonify, session, flash
 import sqlite3
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -170,9 +171,13 @@ def api_add_student():
     conn.commit()
     conn.close()
     return jsonify({"message": "Student added successfully"}), 201
+@app.route("/signup-page")
+def signup_page():
+    return render_template("signup.html")
 
 @app.route("/signup", methods=["POST"])
 def signup():
+
     username = request.form.get("username")
     password = request.form.get("password")
 
@@ -182,24 +187,31 @@ def signup():
     conn = sqlite3.connect("students.db")
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    cursor.execute(
+        "SELECT * FROM users WHERE username = ?",
+        (username,)
+    )
+
     existing_user = cursor.fetchone()
 
     if existing_user:
         conn.close()
-        return "User already exists", 400
+        flash("user already exists")
+        return redirect("/signup-page")
+
+    hashed_password = generate_password_hash(password)
 
     cursor.execute(
         "INSERT INTO users (username, password) VALUES (?, ?)",
-        (username, password)
+        (username, hashed_password)
     )
 
     conn.commit()
     conn.close()
 
-    return "Signup successful"
-
     session["user"] = username
+
+    return redirect("/dashboard")
 
 @app.route("/login-page")
 def login_page():
@@ -219,8 +231,8 @@ def login():
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT * FROM users WHERE username = ? AND password = ?",
-        (username, password)
+        "SELECT * FROM users WHERE username = ?",
+        (username,)
     )
 
     user = cursor.fetchone()
@@ -228,18 +240,28 @@ def login():
     conn.close()
 
     if not user:
-        return "Invalid credentials", 401
+        flash("Invalid credentials")
+        return redirect("/login-page")
+    
+    if not check_password_hash(user[2], password):
+        flash("Invalid credentials")
+        return redirect("/login-page")
 
     session["user"] = username
-
-    return "Login successful"
+    return render_template("dashboard.html")
 
 @app.route("/dashboard")
 def dashboard():
- if "user" not in session:
-    return "Access denied", 401
- else:
-    return f"Welcome to the dashboard, {session['user']}!"  
+    if "user" not in session:
+        flash("Please login first")
+        return redirect("/login-page")
+
+    return render_template("dashboard.html")  
+ 
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect("/login-page")
  
 
 if __name__ == "__main__":
