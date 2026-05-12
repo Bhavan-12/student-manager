@@ -1,10 +1,26 @@
 from flask import Flask, jsonify, render_template, request, redirect, jsonify, session, flash
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "secret123"
-
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user" not in session:
+            flash("Please login first")
+            return redirect("/login-page")
+        return f(*args, **kwargs)
+    return decorated_function
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("role") != "admin":
+            flash("Admin access required")
+            return redirect("/login-page")
+        return f(*args, **kwargs)
+    return decorated_function
 def init_db():
     conn = sqlite3.connect("students.db")
     cursor = conn.cursor()
@@ -18,12 +34,13 @@ def init_db():
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL
-        )
-    """)
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
+    )
+""")
     conn.commit()
     conn.close()
 
@@ -53,6 +70,8 @@ def index():
 
 
 @app.route("/add-student", methods=["POST"])
+@login_required
+@admin_required
 def add_student():
     name = request.form.get("name")
     branch = request.form.get("branch")
@@ -81,22 +100,23 @@ def add_student():
     return redirect("/")
 
 @app.route("/delete-student/<int:student_id>", methods=["POST"])
+@login_required
+@admin_required
 def delete_student(student_id):
     conn = sqlite3.connect("students.db")
     cursor = conn.cursor()
-
     cursor.execute("DELETE FROM students WHERE id = ?", (student_id,))
-
     conn.commit()
     conn.close()
 
     return redirect("/")
 
 @app.route("/edit/<int:student_id>")
+@login_required
+@admin_required
 def edit_student(student_id):
     conn = sqlite3.connect("students.db")
     cursor = conn.cursor()
-
     cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
     student = cursor.fetchone()
 
@@ -105,6 +125,8 @@ def edit_student(student_id):
     return render_template("edit.html", student=student)
 
 @app.route("/update/<int:student_id>", methods=["POST"])
+@login_required
+@admin_required
 def update_student(student_id):
     name = request.form.get("name")
     branch = request.form.get("branch")
@@ -181,6 +203,11 @@ def signup():
     username = request.form.get("username")
     password = request.form.get("password")
 
+    if username == "bhavan":
+        role = "admin"
+    else:
+        role = "user"
+
     if not username or not password:
         return "username and password are required", 400
 
@@ -202,14 +229,15 @@ def signup():
     hashed_password = generate_password_hash(password)
 
     cursor.execute(
-        "INSERT INTO users (username, password) VALUES (?, ?)",
-        (username, hashed_password)
+        "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+        (username, hashed_password, role)
     )
 
     conn.commit()
     conn.close()
 
     session["user"] = username
+    session["role"] = role
 
     return redirect("/dashboard")
 
@@ -248,15 +276,22 @@ def login():
         return redirect("/login-page")
 
     session["user"] = username
+    session["role"] = user[3]
     return render_template("dashboard.html")
 
 @app.route("/dashboard")
+@login_required
 def dashboard():
-    if "user" not in session:
-        flash("Please login first")
-        return redirect("/login-page")
+    conn = sqlite3.connect("students.db")
+    cursor = conn.cursor()
 
-    return render_template("dashboard.html")  
+    cursor.execute("SELECT COUNT(*) FROM students")
+
+    total_students = cursor.fetchone()[0]
+
+    conn.close()
+
+    return render_template("dashboard.html", total_students=total_students)  
  
 @app.route("/logout")
 def logout():
