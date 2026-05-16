@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, render_template, request, redirect, jsonify, session, flash
 import sqlite3
-from streamlit import user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
@@ -46,10 +45,13 @@ def init_db():
     conn.close()
 
 init_db()
+def get_db_connection():
+    conn = sqlite3.connect("students.db")
+    return conn
 
 @app.route("/")
 def index():
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     search = request.args.get("search")
@@ -80,7 +82,7 @@ def add_student():
     if not name or not branch:
         return "Name and branch are required"
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM students WHERE name = ?", (name,))
@@ -104,7 +106,7 @@ def add_student():
 @login_required
 @admin_required
 def delete_student(student_id):
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM students WHERE id = ?", (student_id,))
     conn.commit()
@@ -116,7 +118,7 @@ def delete_student(student_id):
 @login_required
 @admin_required
 def edit_student(student_id):
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
     student = cursor.fetchone()
@@ -132,7 +134,7 @@ def update_student(student_id):
     name = request.form.get("name")
     branch = request.form.get("branch")
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -147,7 +149,7 @@ def update_student(student_id):
 
 @app.route("/api/student/<int:student_id>")
 def api_student(student_id):
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
@@ -162,7 +164,7 @@ def api_student(student_id):
 
 @app.route("/api/students")
 def api_students():
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT * FROM students")
@@ -180,7 +182,7 @@ def api_add_student():
     branch = data.get("branch")
     if not name or not branch:
         return jsonify ({"error": "name and branch are required"}), 400
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM students WHERE name = ?", (name,))
     existing_student = cursor.fetchone()
@@ -212,7 +214,7 @@ def signup():
     if not username or not password:
         return "username and password are required", 400
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -256,7 +258,7 @@ def login():
     if not username or not password:
         return "Username and password are required", 400
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -283,7 +285,7 @@ def login():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM students")
@@ -308,7 +310,7 @@ def api_login():
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -338,7 +340,7 @@ def api_dashboard():
     if "user" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM students")
@@ -353,7 +355,7 @@ def api_delete_student(student_id):
     if "user" not in session or session.get("role") != "admin":
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM students WHERE id = ?", (student_id,))
     conn.commit()
@@ -364,7 +366,7 @@ def api_delete_student(student_id):
 @app.route("/api/update-student/<int:student_id>", methods=["PUT"])
 def api_update_student(student_id):
     if "user" not in session or session.get("role") != "admin":
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Unauthorized"}), 401 
 
     data = request.get_json()
     name = data.get("name")
@@ -373,7 +375,7 @@ def api_update_student(student_id):
     if not name or not branch:
         return jsonify({"error": "Name and branch are required"}), 400
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -391,7 +393,7 @@ def api_edit_student(student_id):
     if "user" not in session or session.get("role") != "admin":
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
     student = cursor.fetchone()
@@ -406,7 +408,7 @@ def api_edit_student(student_id):
 @app.route("/api/search-students", methods=["GET"])
 def api_search_students():
     search = request.args.get("search")
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     if search:
@@ -434,7 +436,7 @@ def api_signup():
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
 
-    conn = sqlite3.connect("students.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
