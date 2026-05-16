@@ -325,7 +325,6 @@ tr:hover td {
     font-size: 36px;
     margin-bottom: 12px;
     background: linear-gradient(to right, #ffffff, #c084fc);
-    -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
